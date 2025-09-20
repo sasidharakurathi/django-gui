@@ -3,6 +3,7 @@
   "displayName": "Django GUI",
   "description": "A GUI for executing Django commands.",
   "version": "0.0.1",
+  "publisher": "Sasidhar Akurathi",
   "engines": {
     "vscode": "^1.104.0"
   },
@@ -13,14 +14,13 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [{
-      "command": "django-gui.helloWorld",
-      "title": "Hello World"
+      "command": "django-gui.start",
+      "title": "Django: Open GUI Command Panel",
+      "category": "Django"
     }]
   },
   "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "vscode-test"
+    "test": "node ./test/runTest.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.104.0",
@@ -28,6 +28,11 @@
     "@types/node": "22.x",
     "eslint": "^9.34.0",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
-  }
+    "@vscode/test-electron": "^2.5.2",
+    "glob": "^8.0.3",
+    "typescript": "^4.9.3"
+  },
+  "extensionDependencies": [
+    "ms-python.python"
+  ]
 }
