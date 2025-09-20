@@ -17,7 +17,25 @@
       "command": "django-gui.start",
       "title": "Django: Open GUI Command Panel",
       "category": "Django"
-    }]
+    }],
+    
+  "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "django-gui-container",
+          "title": "Django GUI",
+          "icon": "media/django-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "django-gui-container": [
+        {
+          "id": "django-commands-view",
+          "name": "Commands"
+        }
+      ]
+    }
   },
   "scripts": {
     "test": "node ./test/runTest.js"

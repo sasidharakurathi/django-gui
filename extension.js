@@ -1,142 +1,192 @@
 const vscode = require('vscode');
 const path = require('path');
-const fs = require('fs');
+const process = require('process');
+const { DJANGO_COMMANDS } = require('./js/commands.js');
 
-function activate(context) {
-    let disposable = vscode.commands.registerCommand('django-gui.start', async function () {
-        // Find the manage.py file in the workspace
-        const managePyFiles = await vscode.workspace.findFiles('**/manage.py', '**/venv/**', 1);
+let commandState = {}; 
+let activeTerminals = {}; 
+const SINGLE_EXEC_KEY = '__SINGLE_EXECUTION__';
 
-        if (managePyFiles.length === 0) {
-            vscode.window.showErrorMessage('Could not find manage.py in your workspace. Is this a Django project?');
-            return;
-        }
-
-        const managePyPath = managePyFiles[0].fsPath;
-        const projectRoot = path.dirname(managePyPath);
-
-        // Create and show a new webview panel
-        const panel = vscode.window.createWebviewPanel(
-            'djangoGui', // Identifies the type of the webview. Used internally
-            'Django GUI', // Title of the panel displayed to the user
-            vscode.ViewColumn.One, // Editor column to show the new webview panel in
-            {
-                enableScripts: true,
-                localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'css')), vscode.Uri.file(path.join(context.extensionPath, 'js'))]
-            }
-        );
-
-        // Set the webview's initial HTML content
-        panel.webview.html = getWebviewContent(context, panel.webview);
-
-        // Handle messages from the webview
-        panel.webview.onDidReceiveMessage(
-            async message => {
-                const pythonPath = await getPythonInterpreterPath();
-                if (!pythonPath) {
-                    vscode.window.showErrorMessage('Python interpreter not selected. Please select an interpreter using the Python extension.');
-                    return;
-                }
-
-                // Construct and execute the command in a new terminal
-                // const command = `${pythonPath} manage.py ${message.command}`;
-				let command = `"${pythonPath}" manage.py ${message.command}`;
-				// On Windows, PowerShell needs the call operator '&' for paths with spaces.
-				// This is safe for CMD as well.
-				if (process.platform === 'win32') {
-					command = `& ${command}`;
-				}
-                const terminal = vscode.window.createTerminal(`Django Command`);
-                terminal.sendText(`cd "${projectRoot}"`); // Navigate to project root
-                terminal.sendText(command);
-                terminal.show();
-            },
-            undefined,
-            context.subscriptions
-        );
-    });
-
-    context.subscriptions.push(disposable);
+function toBold(text) {
+    const boldMap = {
+        'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧', 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
+        'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶', 'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁', 'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇'
+    };
+    return text.split('').map(char => boldMap[char] || char).join('');
 }
 
-// Function to get the selected Python interpreter path from the Python extension
+const groupedCommands = {};
+for (const key in DJANGO_COMMANDS) {
+    const command = DJANGO_COMMANDS[key];
+    const group = command.group || 'Other';
+    if (!groupedCommands[group]) {
+        groupedCommands[group] = [];
+    }
+    groupedCommands[group].push({ key, ...command });
+}
+
+function activate(context) {
+    const djangoCommandsProvider = new DjangoCommandsProvider();
+    vscode.window.registerTreeDataProvider('django-commands-view', djangoCommandsProvider);
+
+    context.subscriptions.push(vscode.window.onDidCloseTerminal((closedTerminal) => {
+        for (const key in activeTerminals) {
+            if (activeTerminals[key] && activeTerminals[key].processId === closedTerminal.processId) {
+                delete activeTerminals[key];
+                break;
+            }
+        }
+    }));
+
+    // ... (All other command registrations are unchanged) ...
+    context.subscriptions.push(vscode.commands.registerCommand('django-gui.refresh', () => djangoCommandsProvider.refresh()));
+    context.subscriptions.push(vscode.commands.registerCommand('django-gui.resetOptions', (commandKey) => {
+        if (commandState[commandKey]) { commandState[commandKey] = {}; djangoCommandsProvider.refresh(); }
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('django-gui.setOption', async (option, commandKey) => {
+        if (!commandState[commandKey]) commandState[commandKey] = {};
+        let value;
+        if (option.type === 'dropdown' && Array.isArray(option.choices)) {
+            value = await vscode.window.showQuickPick(option.choices, { placeHolder: `Select a value for ${option.label}` });
+        } else {
+            value = await vscode.window.showInputBox({ prompt: `Enter value for ${option.label}`, value: commandState[commandKey][option.name] || '', placeHolder: option.placeholder || '' });
+        }
+        if (value !== undefined) { commandState[commandKey][option.name] = value; djangoCommandsProvider.refresh(); }
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('django-gui.toggleOption', (option, commandKey) => {
+        if (!commandState[commandKey]) commandState[commandKey] = {};
+        commandState[commandKey][option.name] = !commandState[commandKey][option.name];
+        djangoCommandsProvider.refresh();
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('django-gui.execute', async (commandKey) => {
+        if (!commandKey) return;
+        const commandData = DJANGO_COMMANDS[commandKey];
+        let finalCommand = commandKey;
+        const optionsForCommand = commandState[commandKey] || {};
+
+        (commandData.options || []).forEach(opt => {
+            const value = optionsForCommand[opt.name];
+            if (value) {
+                if (opt.type === 'checkbox') { finalCommand += ` ${opt.name}`; } 
+                else if (opt.name.startsWith('--')) { finalCommand += ` ${opt.name} ${value}`; }
+                else { finalCommand += ` ${value}`; }
+            }
+        });
+
+        const managePyFiles = await vscode.workspace.findFiles('**/manage.py', '**/venv/**', 1);
+        if (managePyFiles.length === 0) { vscode.window.showErrorMessage('Could not find manage.py in your workspace.'); return; }
+        const projectRoot = path.dirname(managePyFiles[0].fsPath);
+        const pythonPath = await getPythonInterpreterPath();
+        if (!pythonPath) return;
+
+        let terminalCommand = `"${pythonPath}" manage.py ${finalCommand}`;
+        if (process.platform === 'win32') { terminalCommand = `& ${terminalCommand}`; }
+        
+        let targetTerminal;
+        const isContinuous = commandData.isContinuous || false;
+
+        if (isContinuous) {
+            if (activeTerminals[commandKey]) { activeTerminals[commandKey].dispose(); }
+            targetTerminal = vscode.window.createTerminal(`Django: ${commandData.label}`);
+            activeTerminals[commandKey] = targetTerminal;
+        } else {
+            if (activeTerminals[SINGLE_EXEC_KEY] && activeTerminals[SINGLE_EXEC_KEY].exitStatus === undefined) {
+                targetTerminal = activeTerminals[SINGLE_EXEC_KEY];
+            } else {
+                targetTerminal = vscode.window.createTerminal("Django Commands");
+                activeTerminals[SINGLE_EXEC_KEY] = targetTerminal;
+            }
+        }
+        
+        targetTerminal.sendText(`cd "${projectRoot}"`);
+        targetTerminal.sendText(terminalCommand);
+        targetTerminal.show();
+    }));
+}
+
+class DjangoCommandsProvider {
+    constructor() { this._onDidChangeTreeData = new vscode.EventEmitter(); this.onDidChangeTreeData = this._onDidChangeTreeData.event; }
+    refresh() { this._onDidChangeTreeData.fire(); }
+    getTreeItem(element) { return element; }
+
+    getChildren(element) {
+        if (!element) {
+            return Object.keys(groupedCommands).map(groupName => {
+                const groupItem = new vscode.TreeItem(toBold(groupName.toUpperCase()), vscode.TreeItemCollapsibleState.Collapsed);
+                groupItem.contextValue = 'group';
+                groupItem.groupName = groupName;
+                
+                switch (groupName) {
+                    case 'Project': groupItem.iconPath = new vscode.ThemeIcon('folder-active'); break;
+                    case 'Database': groupItem.iconPath = new vscode.ThemeIcon('database'); break;
+                    case 'Users': groupItem.iconPath = new vscode.ThemeIcon('account'); break;
+                    case 'Static Files': groupItem.iconPath = new vscode.ThemeIcon('file-symlink-file'); break;
+                    case 'Testing': groupItem.iconPath = new vscode.ThemeIcon('beaker'); break;
+                    default: groupItem.iconPath = new vscode.ThemeIcon('symbol-misc'); break;
+                }
+                
+                return groupItem;
+            });
+        }
+
+        if (element.contextValue === 'group') {
+            return groupedCommands[element.groupName].map(command => {
+                const collapsibleState = (command.options && command.options.length > 0) ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
+                
+                // --- APPLY THE BOLD EFFECT TO THE INNER DROPDOWN LABEL ---
+                const treeItem = new vscode.TreeItem(toBold(command.label), collapsibleState);
+
+                treeItem.tooltip = command.description;
+                treeItem.contextValue = 'command';
+                treeItem.commandKey = command.key;
+
+                if (!command.options || command.options.length === 0) {
+                    treeItem.command = { command: 'django-gui.execute', title: 'Execute Command', arguments: [command.key] };
+                }
+                return treeItem;
+            });
+        }
+
+        const commandKey = element.commandKey;
+        if (element.contextValue === 'command' && commandKey) {
+            // ... (This logic for showing options remains unchanged) ...
+            const commandData = DJANGO_COMMANDS[commandKey];
+            const optionsForCommand = commandState[commandKey] || {};
+            const optionItems = (commandData.options || []).map(opt => {
+                const currentValue = optionsForCommand[opt.name];
+                let optionItem;
+                if (opt.type === 'checkbox') {
+                    optionItem = new vscode.TreeItem(opt.label);
+                    optionItem.iconPath = new vscode.ThemeIcon(!!currentValue ? 'check' : 'circle-slash');
+                    optionItem.command = { command: 'django-gui.toggleOption', title: 'Toggle Option', arguments: [opt, commandKey] };
+                } else {
+                    let label = `${opt.label}: ${currentValue || `(${opt.placeholder || 'Set value'})`}`;
+                    optionItem = new vscode.TreeItem(label);
+                    optionItem.iconPath = new vscode.ThemeIcon('edit');
+                    optionItem.command = { command: 'django-gui.setOption', title: 'Set Option', arguments: [opt, commandKey] };
+                }
+                return optionItem;
+            });
+            const resetButton = new vscode.TreeItem('↩️ Reset Options');
+            resetButton.iconPath = new vscode.ThemeIcon('refresh');
+            resetButton.command = { command: 'django-gui.resetOptions', title: 'Reset Options', arguments: [commandKey] };
+            const executeButton = new vscode.TreeItem('🚀 Execute Command');
+            executeButton.iconPath = new vscode.ThemeIcon('play');
+            executeButton.command = { command: 'django-gui.execute', title: 'Execute Command', arguments: [commandKey] };
+            return Promise.resolve([...optionItems, resetButton, executeButton]);
+        }
+        return Promise.resolve([]);
+    }
+}
+
 async function getPythonInterpreterPath() {
     const pythonExtension = vscode.extensions.getExtension('ms-python.python');
-    if (!pythonExtension) {
-        return undefined;
-    }
-    if (!pythonExtension.isActive) {
-        await pythonExtension.activate();
-    }
+    if (!pythonExtension) { return undefined; }
+    if (!pythonExtension.isActive) { await pythonExtension.activate(); }
     const api = pythonExtension.exports;
     const environment = await api.environments.getActiveEnvironmentPath();
     return environment ? environment.path : undefined;
 }
 
-
-function getWebviewContent(context, webview) {
-    // Get paths to local resources
-    const stylesPath = vscode.Uri.file(path.join(context.extensionPath, 'css', 'styles.css'));
-    const scriptPath = vscode.Uri.file(path.join(context.extensionPath, 'js', 'webview.js'));
-
-    const stylesUri = webview.asWebviewUri(stylesPath);
-    const scriptUri = webview.asWebviewUri(scriptPath);
-
-    // Using a nonce for security
-    const nonce = getNonce();
-
-    return `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-        <link href="${stylesUri}" rel="stylesheet" />
-        <title>Django GUI</title>
-    </head>
-    <body>
-        <h1>Django Command Executor</h1>
-        <p>Select a command and provide any necessary arguments.</p>
-
-        <div class="command-section">
-            <label for="command-select">Select Command:</label>
-            <select id="command-select">
-                <option value="">-- Choose a command --</option>
-                <option value="runserver">runserver</option>
-                <option value="startapp">startapp</option>
-                <option value="startproject">startproject</option>
-                <option value="makemigrations">makemigrations</option>
-                <option value="migrate">migrate</option>
-                <option value="createsuperuser">createsuperuser</option>
-                <option value="collectstatic">collectstatic</option>
-                <option value="shell">shell</option>
-                <option value="custom">Custom Command</option>
-            </select>
-        </div>
-
-        <div id="options-container"></div>
-
-        <button id="execute-btn">🚀 Execute Command</button>
-
-        <script nonce="${nonce}" src="${scriptUri}"></script>
-    </body>
-    </html>`;
-}
-
-// Function to generate a random nonce for Content Security Policy
-function getNonce() {
-    let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
-}
-
-
 function deactivate() {}
-
-module.exports = {
-    activate,
-    deactivate
-};
+module.exports = { activate, deactivate };

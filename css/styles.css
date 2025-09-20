@@ -46,3 +46,33 @@ button:hover {
 .command-section, .option-item {
     margin-bottom: 15px;
 }
+
+hr {
+    border: none;
+    border-top: 1px solid var(--vscode-editorWidget-border);
+    margin: 20px 0;
+}
+
+h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+#description-container {
+    background-color: var(--vscode-textBlockQuote-background);
+    border-left: 4px solid var(--vscode-textLink-foreground);
+    padding: 1px 15px;
+    margin-top: 15px;
+}
+
+.option-item label {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+/* Style for checkboxes to align them better */
+.option-item input[type="checkbox"] {
+    width: auto;
+    margin-right: 5px;
+    vertical-align: middle;
+}
