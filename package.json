@@ -2,7 +2,7 @@
   "name": "django-gui",
   "displayName": "Django GUI",
   "description": "A GUI for executing Django commands.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "SasidharAkurathi",
   "repository": {
     "type": "git",
