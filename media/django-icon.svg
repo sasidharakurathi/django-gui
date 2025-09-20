@@ -1,11 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <style>
-    .text {
-      fill: currentColor;
-      font-family: 'Georgia', 'serif';
-      font-weight: bold;
-      font-size: 90px;
-    }
-  </style>
-  <text x="12" y="85" class="text">D</text>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128"
+     xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Django Commands GUI Icon</title>
+  <desc id="desc">Minimal Dj logo with command chevron, no background</desc>
+
+  <!-- Dj text -->
+  <text x="10" y="92" font-family="Segoe UI, Arial, sans-serif"
+        font-weight="700" font-size="80" fill="#0C4B33">
+    Dj
+  </text>
+
+  <!-- command chevron accent -->
+  <path d="M95 50 L115 64 L95 78"
+        fill="none" stroke="#FFD54F" stroke-width="8"
+        stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

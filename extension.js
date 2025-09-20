@@ -16,6 +16,15 @@ function toBold(text) {
 }
 
 const groupedCommands = {};
+const groupColors = {
+    'Project': '#5BC0DE',      // Light Blue
+    'Database': '#F0AD4E',     // Orange
+    'Users': '#5CB85C',        // Green
+    'Static Files': '#D9534F', // Red
+    'Testing': '#7E57C2',      // Purple
+    'Other': '#B0BEC5'         // Gray
+};
+
 for (const key in DJANGO_COMMANDS) {
     const command = DJANGO_COMMANDS[key];
     const group = command.group || 'Other';
@@ -25,20 +34,22 @@ for (const key in DJANGO_COMMANDS) {
     groupedCommands[group].push({ key, ...command });
 }
 
+class ColorizedGroupItem extends vscode.TreeItem {
+    constructor(label, color) {
+        super(label, vscode.TreeItemCollapsibleState.Collapsed);
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="${color}" width="16" height="16"><path d="M.5 2.5l.44-.9A1.5 1.5 0 012.28.5h2.16a1.5 1.5 0 011.34 1.1l.44.9H14.5a1 1 0 011 1v9a1 1 0 01-1 1H1.5a1 1 0 01-1-1v-9a1 1 0 011-1H.5z"/></svg>`;
+        this.iconPath = vscode.Uri.parse(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`);
+    }
+}
+
 function activate(context) {
     const djangoCommandsProvider = new DjangoCommandsProvider();
     vscode.window.registerTreeDataProvider('django-commands-view', djangoCommandsProvider);
-
+    
+    // ... (All command registrations remain unchanged) ...
     context.subscriptions.push(vscode.window.onDidCloseTerminal((closedTerminal) => {
-        for (const key in activeTerminals) {
-            if (activeTerminals[key] && activeTerminals[key].processId === closedTerminal.processId) {
-                delete activeTerminals[key];
-                break;
-            }
-        }
+        for (const key in activeTerminals) { if (activeTerminals[key] && activeTerminals[key].processId === closedTerminal.processId) { delete activeTerminals[key]; break; } }
     }));
-
-    // ... (All other command registrations are unchanged) ...
     context.subscriptions.push(vscode.commands.registerCommand('django-gui.refresh', () => djangoCommandsProvider.refresh()));
     context.subscriptions.push(vscode.commands.registerCommand('django-gui.resetOptions', (commandKey) => {
         if (commandState[commandKey]) { commandState[commandKey] = {}; djangoCommandsProvider.refresh(); }
@@ -63,7 +74,6 @@ function activate(context) {
         const commandData = DJANGO_COMMANDS[commandKey];
         let finalCommand = commandKey;
         const optionsForCommand = commandState[commandKey] || {};
-
         (commandData.options || []).forEach(opt => {
             const value = optionsForCommand[opt.name];
             if (value) {
@@ -72,19 +82,15 @@ function activate(context) {
                 else { finalCommand += ` ${value}`; }
             }
         });
-
         const managePyFiles = await vscode.workspace.findFiles('**/manage.py', '**/venv/**', 1);
         if (managePyFiles.length === 0) { vscode.window.showErrorMessage('Could not find manage.py in your workspace.'); return; }
         const projectRoot = path.dirname(managePyFiles[0].fsPath);
         const pythonPath = await getPythonInterpreterPath();
         if (!pythonPath) return;
-
         let terminalCommand = `"${pythonPath}" manage.py ${finalCommand}`;
         if (process.platform === 'win32') { terminalCommand = `& ${terminalCommand}`; }
-        
         let targetTerminal;
         const isContinuous = commandData.isContinuous || false;
-
         if (isContinuous) {
             if (activeTerminals[commandKey]) { activeTerminals[commandKey].dispose(); }
             targetTerminal = vscode.window.createTerminal(`Django: ${commandData.label}`);
@@ -97,7 +103,6 @@ function activate(context) {
                 activeTerminals[SINGLE_EXEC_KEY] = targetTerminal;
             }
         }
-        
         targetTerminal.sendText(`cd "${projectRoot}"`);
         targetTerminal.sendText(terminalCommand);
         targetTerminal.show();
@@ -112,29 +117,23 @@ class DjangoCommandsProvider {
     getChildren(element) {
         if (!element) {
             return Object.keys(groupedCommands).map(groupName => {
-                const groupItem = new vscode.TreeItem(toBold(groupName.toUpperCase()), vscode.TreeItemCollapsibleState.Collapsed);
+                const color = groupColors[groupName] || groupColors['Other'];
+                const groupItem = new ColorizedGroupItem(toBold(groupName.toUpperCase()), color);
                 groupItem.contextValue = 'group';
                 groupItem.groupName = groupName;
-                
-                switch (groupName) {
-                    case 'Project': groupItem.iconPath = new vscode.ThemeIcon('folder-active'); break;
-                    case 'Database': groupItem.iconPath = new vscode.ThemeIcon('database'); break;
-                    case 'Users': groupItem.iconPath = new vscode.ThemeIcon('account'); break;
-                    case 'Static Files': groupItem.iconPath = new vscode.ThemeIcon('file-symlink-file'); break;
-                    case 'Testing': groupItem.iconPath = new vscode.ThemeIcon('beaker'); break;
-                    default: groupItem.iconPath = new vscode.ThemeIcon('symbol-misc'); break;
-                }
-                
                 return groupItem;
             });
         }
 
+        // --- MODIFICATION: Add colored dot icons to the command items ---
         if (element.contextValue === 'group') {
             return groupedCommands[element.groupName].map(command => {
                 const collapsibleState = (command.options && command.options.length > 0) ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
-                
-                // --- APPLY THE BOLD EFFECT TO THE INNER DROPDOWN LABEL ---
                 const treeItem = new vscode.TreeItem(toBold(command.label), collapsibleState);
+                
+                const color = groupColors[command.group] || groupColors['Other'];
+                const svgDot = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="${color}" width="16" height="16"><circle cx="8" cy="8" r="4"/></svg>`;
+                treeItem.iconPath = vscode.Uri.parse(`data:image/svg+xml;utf8,${encodeURIComponent(svgDot)}`);
 
                 treeItem.tooltip = command.description;
                 treeItem.contextValue = 'command';
@@ -149,7 +148,6 @@ class DjangoCommandsProvider {
 
         const commandKey = element.commandKey;
         if (element.contextValue === 'command' && commandKey) {
-            // ... (This logic for showing options remains unchanged) ...
             const commandData = DJANGO_COMMANDS[commandKey];
             const optionsForCommand = commandState[commandKey] || {};
             const optionItems = (commandData.options || []).map(opt => {
