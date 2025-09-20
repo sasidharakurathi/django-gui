@@ -6,7 +6,6 @@
 
 A powerful and intuitive GUI sidebar for executing Django's `manage.py` commands directly within Visual Studio Code. Stop typing, start clicking!
 
-![Django GUI in action](https://i.imgur.com/your-main-gif-url.gif) 
 ---
 
 ## Why Django GUI?
@@ -32,7 +31,7 @@ This extension is perfect for both beginners who are learning the commands and f
 
 1.  **Install the Extension:** Grab it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui).
 2.  **Open a Django Project:** Make sure your workspace contains a `manage.py` file.
-3.  **Click the Icon:** Click on the new Django "D" icon in the Activity Bar on the left.
+3.  **Click the Icon:** Click on the new Django "Dj>" icon in the Activity Bar on the left.
 4.  **Run Commands:**
     * The sidebar will show all command categories.
     * Click on a category (e.g., **DATABASE**) to expand it.
@@ -46,12 +45,11 @@ This extension is perfect for both beginners who are learning the commands and f
 
 Hi! I'm Sasidhar Akurathi, the creator of Django GUI. I built this extension to streamline my own Django development workflow and hope it helps you too.
 
-* **GitHub**: [Your GitHub Profile URL](https://github.com/your-username)
-* **LinkedIn**: [Your LinkedIn Profile URL](https://linkedin.com/in/your-profile)
-* **Twitter**: [@YourTwitterHandle](https://twitter.com/your-handle)
+* **GitHub**: [https://github.com/sasidharakurathi](https://github.com/sasidharakurathi)
+* **LinkedIn**: [https://www.linkedin.com/in/sasidhar-akurathi/](https://www.linkedin.com/in/sasidhar-akurathi/)
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/sasidharakurathi/django-gui/blob/main/LICENSE) file for details.
