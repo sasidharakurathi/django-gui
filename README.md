@@ -1,8 +1,8 @@
 # Django GUI for VS Code
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/sasidharakurathi.django-gui?style=flat-square&label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/sasidharakurathi.django-gui?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/sasidharakurathi.django-gui?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/SasidharAkurathi.django-gui?style=flat-square&label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=SasidharAkurathi.django-gui)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/SasidharAkurathi.django-gui?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=SasidharAkurathi.django-gui)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/SasidharAkurathi.django-gui?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=SasidharAkurathi.django-gui)
 
 A powerful and intuitive GUI sidebar for executing Django's `manage.py` commands directly within Visual Studio Code. Stop typing, start clicking!
 
