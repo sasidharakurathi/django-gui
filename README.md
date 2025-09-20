@@ -1,65 +1,57 @@
-# django-gui README
+# Django GUI for VS Code
 
-This is the README for your extension "django-gui". After writing up a brief description, we recommend including the following sections.
+[![Version](https://img.shields.io/visual-studio-marketplace/v/sasidharakurathi.django-gui?style=flat-square&label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/sasidharakurathi.django-gui?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/sasidharakurathi.django-gui?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui)
+
+A powerful and intuitive GUI sidebar for executing Django's `manage.py` commands directly within Visual Studio Code. Stop typing, start clicking!
+
+![Django GUI in action](https://i.imgur.com/your-main-gif-url.gif) 
+---
+
+## Why Django GUI?
+
+Manually typing `python manage.py <command>` and its various arguments is repetitive and error-prone. Django GUI provides a beautiful, organized, and discoverable interface for all your Django commands, seamlessly integrated into the VS Code Activity Bar.
+
+This extension is perfect for both beginners who are learning the commands and for experienced developers who want to speed up their workflow.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+* **✨ Full Command Palette:** Access all standard Django commands like `runserver`, `makemigrations`, `migrate`, `collectstatic`, and more.
+* **🎨 Organized & Themed UI:** Commands are grouped by category (Project, Database, Users) with unique, colored icons that look great in any theme.
+* **⚙️ Interactive Options:** Interactively set command arguments and flags using native VS Code input boxes, dropdowns, and checkboxes.
+* **🧠 Smart Terminal Management:**
+    * **Dedicated Terminals** for continuous commands like `runserver` and `shell`. Rerunning the command automatically stops the old process and starts a new one.
+    * **Shared Terminal** for all single-execution commands, keeping your workspace clean.
+* **🚀 One-Click Execution:** Run commands with a single click. No more context switching or manual typing.
+* **💻 Cross-Platform:** Works seamlessly on Windows, macOS, and Linux.
 
 ---
 
-## Working with Markdown
+## Getting Started
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+1.  **Install the Extension:** Grab it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=sasidharakurathi.django-gui).
+2.  **Open a Django Project:** Make sure your workspace contains a `manage.py` file.
+3.  **Click the Icon:** Click on the new Django "D" icon in the Activity Bar on the left.
+4.  **Run Commands:**
+    * The sidebar will show all command categories.
+    * Click on a category (e.g., **DATABASE**) to expand it.
+    * Click on a command (e.g., **Migrate**) to see its options.
+    * Set any options you need and click the **🚀 Execute Command** button!
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
 
-## For more information
+---
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+## About the Author
 
-**Enjoy!**
+Hi! I'm Sasidhar Akurathi, the creator of Django GUI. I built this extension to streamline my own Django development workflow and hope it helps you too.
+
+* **GitHub**: [Your GitHub Profile URL](https://github.com/your-username)
+* **LinkedIn**: [Your LinkedIn Profile URL](https://linkedin.com/in/your-profile)
+* **Twitter**: [@YourTwitterHandle](https://twitter.com/your-handle)
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
